@@ -1,0 +1,37 @@
+version: "3.3"
+
+services:
+  rabbitmq:
+    image: rabbitmq:3.9.5-management-alpine
+    ports:
+      - 5672:5672
+      - 15672:15672
+    volumes:
+      - ./rabbitdata/rabbitmq/data/:/var/lib/rabbitmq/:delegated
+      - ./rabbitdata/log/:/var/log/rabbitmq:delegated
+    healthcheck:
+      test: [ "CMD", "nc", "-z", "localhost", "5672" ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    networks:
+      - rabbitmq_golang
+  consumer:
+    build:
+      context: consumer
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - rabbitmq_golang
+  publisher:
+    build:
+      context: publisher
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - rabbitmq_golang
+networks:
+  rabbitmq_golang:
+    driver: bridge
